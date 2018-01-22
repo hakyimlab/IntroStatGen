@@ -6,6 +6,8 @@ output: html_notebook
 **Define qqunif function**
 ```{r}
 
+## https://gist.github.com/hakyim/38431b74c6c0bf90c12f
+
 qqunif = 
 function(p,BH=T,CI=T,...)
 {
