@@ -15,25 +15,27 @@ library(pwr)
 
 ## sample size needed to achieve 80% power to detect an effect size of R^2 = 0.01 at a genomewide signficance level \alpha = 5e-8
 
+## Y = a + X b + epsilon
+
+## Calculate correlation R as function of b and use pwr.r.test function
+
+calc_r = function(b,maf,sdy)
+{
+  sdx = sqrt( 2 * maf * (1-maf) )
+  sdx * b / sdy
+}
+
 ## power = 0.80
-## R = 0.10 ## equiv R2=0.01
+## b = 0.2
 ## alpha = 5e-8
 ## n = ?
 
-pwr.r.test(n=NULL, r=0.10, sig.level=5e-8,power=0.80)
-
-eff_fun = function(r,maf,sdy)
-{
-  sdx = sqrt(2 * maf * (1-maf) )
-  sdy  * r / sdx
-}
-
-## Effect size (change in Y given increase in X by 1) is a function of minor allele frequency
-
 maf = 0.5
-r = 0.10
+b = 0.14
 sdy = 1
-eff_fun(r,maf,sdy)
+print(calc_r(b,maf,sdy))
+
+pwr.r.test(n=NULL, r=calc_r(b,maf,sdy), sig.level=5e-8,power=0.80)
 
 ```
 
