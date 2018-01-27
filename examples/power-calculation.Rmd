@@ -1,6 +1,8 @@
 ---
 title: "R Notebook"
 output: html_notebook
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r}
@@ -36,6 +38,12 @@ sdy = 1
 print(calc_r(b,maf,sdy))
 
 pwr.r.test(n=NULL, r=calc_r(b,maf,sdy), sig.level=5e-8,power=0.80)
+
+```
+
+**Case control power calcualtion**
+
+```{r}
 
 ```
 
