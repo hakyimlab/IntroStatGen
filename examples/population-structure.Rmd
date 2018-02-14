@@ -5,14 +5,18 @@ editor_options:
   chunk_output_type: inline
 ---
 
+```{r setup}
+
+work.dir = "~/Downloads/tempo/"
+knitr::opts_knit$set(root.dir = normalizePath(work.dir)) 
+
+```
+
 ```{r}
 library(tidyverse)
 ## qqunif function
 source("https://gist.githubusercontent.com/hakyim/38431b74c6c0bf90c12f/raw/21fbae9a48dc475f42fa60f0ef5509d071dea873/qqunif")
 ```
-
-
-
 
 
 **Download HapMap data and plink**
@@ -31,6 +35,7 @@ wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/h
 # Total wall clock time: 3m 56s
 # Downloaded: 4 files, 2.5G in 3m 56s (10.9 MB/s)
 
+
 ## remove annoying DS_Store files in OSX
 ## find . -name '.DS_Store' |xargs rm
 
@@ -44,23 +49,147 @@ gunzip *.gz
 
 
 ## create binary plink file for chr 22 (to have small example)
-plink_mac/plink --file ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/hapmap3_r3_b36_fwd.consensus.qc.poly --make-bed --chr 22 --out testbed
+plink_mac/plink --file ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/hapmap3_r3_b36_fwd.consensus.qc.poly --make-bed --chr 22 --out hapmapch22
 
 
-## calculate hwe
-
-## create binary plink files with AFR, CEU, ASN only
-plink_mac/plink --file ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/hapmap3_r3_b36_fwd.consensus.qc.poly --make-bed --chr 22 --out testbed
-
+## get reported population data
+wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt
 
 
 
 ```
 
+Assuming from here that the working directory (~/Downloads/tempo/) contains the following files
+- plink (executable)
+- hapmapch22.bed, .fam, .bim
+- relationships_w_pops_051208.txt
 
 
+```{r}
+
+popinfo = read_tsv("relationships_w_pops_051208.txt")
+
+## What's population composition?
+popinfo %>% count(population)
+
+```
+
+
+Effect of population structure in Hardy Weinberg 
+```{r }
+## what happens if we calculate HWE with this mixed population?
+system("./plink --bfile hapmapch22 --hardy --out out/allhwe")
+allhwe = read.table("out/allhwe.hwe",header=TRUE,as.is=TRUE)
+hist(allhwe$P)
+qqunif(allhwe$P,main='HWE HapMap3 All Pop')
+```
+
+```{r}
+## what if we calculate with single population?
+popinfo %>% filter(population=="CEU") %>% write_tsv(path="CEU.fam") 
+system("./plink --bfile hapmapch22 --hardy --keep-fam CEU.fam --out out/CEUhwe")
+CEUhwe = read.table("out/CEUhwe.hwe",header=TRUE,as.is=TRUE)
+hist(CEUhwe$P,main="HWE CEU and founders only")
+qqunif(CEUhwe$P,main="HWE CEU and founders only")
+```
+
+```{r}
+## what if we add nonfounders?
+system("./plink --bfile hapmapch22 --hardy --keep-fam CEU.fam --nonfounders --out out/CEUhwe_nf")
+CEUhwe_nf = read.table("out/CEUhwe_nf.hwe",header=TRUE,as.is=TRUE)
+hist(CEUhwe_nf$P,main="HWE CEU + non founders")
+qqunif(CEUhwe_nf$P,main="HWE CEU + non founders")
+qqplot(-log10(CEUhwe$P),-log10(CEUhwe_nf$P),main="all vs founders only" );abline(0,1) 
+```
+
+
+
+
+Let's try with YRI population
+```{r}
+## what if we calculate with single population?
+popinfo %>% filter(population=="YRI") %>% write_tsv(path="YRI.fam") 
+system("./plink --bfile hapmapch22 --hardy --keep-fam YRI.fam --out out/YRIhwe")
+YRIhwe = read.table("out/YRIhwe.hwe",header=TRUE,as.is=TRUE)
+hist(YRIhwe$P)
+qqunif(YRIhwe$P)
+
+## what if we add nonfounders?
+system("./plink --bfile hapmapch22 --hardy --keep-fam YRI.fam --nonfounders --out out/YRIhwe_nf")
+YRIhwe_nf = read.table("out/YRIhwe_nf.hwe",header=TRUE,as.is=TRUE)
+hist(YRIhwe_nf$P)
+qqunif(YRIhwe_nf$P)
+qqplot(-log10(YRIhwe$P),-log10(YRIhwe_nf$P) );abline(0,1) 
+
+## not very large effect on HWE test p values when we add a few non founders (offsprings)
+
+```
+
+igrowth GWAS
+```{r}
+## read igrowth
+igrowth = read.table("igrowth.txt",header=TRUE,as.is=TRUE)
+## fix FID from igrowth file
+igrowth = popinfo %>% select(-pheno) %>% inner_join(igrowth %>% select(IID,igrowth), by=c("IID"="IID"))
+write_tsv(igrowth,path="igrowth.pheno")
+igrowth %>% ggplot(aes(population,igrowth)) + geom_boxplot()
+summary( lm(igrowth~population,data=igrowth) )
+system("./plink --bfile hapmapch22 --linear --pheno igrowth.pheno --pheno-name igrowth --maf 0.05 --out out/igrowth")
+igrowth.assoc = read.table("out/igrowth.assoc.linear",header=T,as.is=T)
+hist(igrowth.assoc$P)
+qqunif(igrowth.assoc$P)
+```
+
+plot Chi2 stat from unadjusted igrowth gwas
 ```{r}
 
 
 
 ```
+
+Simulate phenotype
+```{r}
+set.seed(10) ## to get the same simulated values each time
+simpheno = popinfo %>% mutate(pheno=rnorm(nrow(popinfo)))
+write_tsv(simpheno, path="sim.pheno")
+## run association with plink
+system("./plink --bfile hapmapch22 --linear --pheno sim.pheno --pheno-name pheno --maf 0.05 --out out/simpheno")
+simpheno.assoc = read.table("out/simpheno.assoc.linear",header=T,as.is=T)
+hist(simpheno.assoc$P)
+qqunif(simpheno.assoc$P)
+```
+
+
+PCA calculation using plink
+```{r}
+## generate PCs using plink
+system("./plink --bfile hapmapch22 --pca --out out/pca")
+## read plink calculated PCs
+pcplink = read.table("out/pca.eigenvec",header=F, as.is=T)
+names(pcplink) = c("FID","IID",paste0("PC", c(1:(ncol(pcplink)-2))) )
+pcplink = popinfo %>% inner_join(pcplink, by=c("FID"="FID", "IID"="IID"))
+## plot PC1 vs PC2
+pcplink %>% ggplot(aes(PC1,PC2,col=population)) + geom_point()
+```
+
+runnig igrowth GWAS using PCs
+```{r}
+
+system("./plink --bfile hapmapch22 --linear --pheno igrowth.pheno --pheno-name igrowth --covar out/pca.eigenvec --covar-number 1-4 --maf 0.05 --out out/igrowth-adjPC")
+
+igrowth.assoc = read.table("out/igrowth-adjPC.assoc.linear",header=T,as.is=T)
+indadd = igrowth.assoc$TEST=="ADD"
+titulo = "igrowh association adjusted for PCs"
+hist(igrowth.assoc$P[indadd],main=titulo)
+qqunif(igrowth.assoc$P[indadd],main=titulo)
+
+## adjusting for PC's p values follow the null distribution more closely.
+
+```
+
+
+
+
+
+
+
