@@ -1,9 +1,11 @@
 ---
-title: "Notes-Lecture-11"
-output: html_document
+title: "Notes-Lecture-12"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-Below we list some facts that you are expected  
+Below we list some facts that you are expected to know from Lecture 12.
 
 Unless otherwise specified, we assume an additive genetic model for the phenotypes.
 
@@ -29,12 +31,13 @@ To predict a complex trait, all we need to know are the $\beta_l$'s and the pers
     - Elastic Net (least squares minimizing both the sum of $\beta^2$ and the sum of $|\beta|$)
 
     - BLUP (Best linear unbiased preditor can be calculated with GCTA and is equivalent to Ridge Regression)
+    - BSLMM (this has two one sparse component with variants of large effect sizes and a polygenic background)
 
 ### Performance of prediction
 
 We use the correlation or the square of the correlation between observed and predicted values (pred_perf_R2) as a measure of performance of the predictor. 
 
-In general, correlation may not be a good measure. For example, a predictor with good correlation may not be a good predictor. For example, if we take the predictor and multiply by a constant factor and or add/subtract a constant number, the correlation will not change but the difference between predictor and observed can change dramatically.
+Correlation is useful to compare to heritability but in general, it may not be a good measure of performance. A predictor with good correlation may be very different to the observed value. For example, if we take the predictor and multiply by a constant factor and or add/subtract a constant number, the correlation does not change but the difference between predictor and observed can change dramatically.
 
 Pred_perf_R2 of the predictor cannot exceed the heritability of the trait. In other words, the narrow sense heritability of the trait determines an upper bound to how well we can predict the trait.
 
