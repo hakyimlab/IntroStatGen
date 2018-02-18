@@ -1,0 +1,31 @@
+---
+title: "Setup-rstudio-server"
+output: html_document
+---
+
+Install googleComputeEngineR, cran or development version
+```{r, eval=FALSE}
+##install.packages("googleComputeEngineR")
+## used devtools install_github
+library(devtools)
+install_github("cloudyr/googleComputeEngineR")
+```
+
+Load googleComputEngineR library
+```{r}
+# Setup Google Credentials and defaults
+Sys.setenv("GCE_AUTH_FILE" = "~/.rstudio-desktop/IntroStatGen-6d9a4f8ded37.json",
+GCE_DEFAULT_PROJECT_ID="introstatgen",
+GCE_DEFAULT_ZONE="us-central1-c")
+library(googleComputeEngineR)
+```
+
+Instantiate Rstudio server vm
+```{r}
+
+vm <- gce_vm(template = "rstudio",
+             name = "my-rstudio",
+             username = "student", password = "korun4-zymb",
+             predefined_type = "n1-standard-1",zone='us-central1-c')
+```
+
