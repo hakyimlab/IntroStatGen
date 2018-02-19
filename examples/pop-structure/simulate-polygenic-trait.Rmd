@@ -34,7 +34,7 @@ library(tidyverse)
 data.dir = "/home/haky/IntroStatGen/data/hapmap/"
 bin.dir = "/home/haky/IntroStatGen/bin/"
 out.dir ="/home/haky/IntroStatGen/out/"
-
+gist.dir = "/home/haky/IntroStatGen/IntroStatGen/examples/"
 
 
 
@@ -85,7 +85,9 @@ calculate polygenic core using --score option in plink
 ```{r}
 
 ##https://www.cog-genomics.org/plink/1.9/score
-system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap-common --score ", weightfile, " header sum --out ", out.dir,"polyscore-seed",seednumber) )
+comm = paste0(bin.dir,"plink --bfile ", data.dir,"hapmap-common --score ", weightfile, " header sum --out ", out.dir,"polyscore-seed",seednumber)
+print(comm)
+system( comm )
 
 ## read sum(beta * X) from polyscore-seed1.profile
 PSdata = read_table(paste0(out.dir,"polyscore-seed",seednumber,".profile"))
@@ -93,7 +95,7 @@ head(PSdata)
 hist(PSdata$SCORESUM)
 ```
 
-Calculate phenotype and write
+Calculate phenotype and write file to be used with plink
 ```{r}
 
 nsamp = nrow(PSdata)
@@ -124,7 +126,7 @@ plots histogram of p values
 qassoc = read_table(paste0(outheader, ".qassoc"))
 dim(qassoc)
 
-
+source(paste0(gist.dir, "qqunif.r")) ## load qqunif function from the gist folder
 
 ```
 
