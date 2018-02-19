@@ -5,54 +5,20 @@ editor_options:
   chunk_output_type: inline
 ---
 
-```{bash}
-#ls
-```
 
-
-```{bash, eval=FALSE}
-
-## download hapmap genotypes
-
-mkdir /home/haky/IntroStatGen/data/
-mkdir /home/haky/IntroStatGen/data/hapmap
-
-wget https://storage.googleapis.com/introstatgen/hapmap.bed /home/haky/IntroStatGen/data/hapmap
-wget https://storage.googleapis.com/introstatgen/hapmap.bim /home/haky/IntroStatGen/data/hapmap
-wget https://storage.googleapis.com/introstatgen/hapmap.fam /home/haky/IntroStatGen/data/hapmap
-
-wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt /home/haky/IntroStatGen/data/hapmap/
-
-## maf 
-
-```
-
-
+load packages and define folders
 ```{r}
 ##install.packages("tidyverse")
 library(tidyverse)
 data.dir = "/home/haky/IntroStatGen/data/hapmap/"
 bin.dir = "/home/haky/IntroStatGen/bin/"
 out.dir ="/home/haky/IntroStatGen/out/"
-gist.dir = "/home/haky/IntroStatGen/IntroStatGen/examples/"
-```
-
-
-```{r, echo=FALSE, eval=FALSE}
-
-## run plink to get maf
-system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --freq --out ",out.dir, "hapmap"))
-mafdata = read_table(paste0(out.dir, "hapmap.frq"))
-hist(mafdata$MAF)
-
-## use plink to generate subset with MAF > 0.05
-system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --make-bed --maf 0.05 --chr 1-22 --out ",data.dir, "hapmap-common"))
+gist.dir = "/home/haky/IntroStatGen/repo-IntroStatGen/gists/"
 ```
 
 
 
 ```{r}
-
 ##read hapmap.bim
 bimdata = read_tsv(paste0(data.dir, "hapmap-common.bim"),col_names = FALSE)
 names(bimdata) = c("chr","rsid","dis","pos","A1","A2")
@@ -64,6 +30,7 @@ MC = round(propC * Mt) ## number of causal SNPs
 seednumber = 1
 
 ```
+
 
 Randomly choose 10% SNPs as causal
 ```{r, eval=FALSE}
@@ -101,14 +68,29 @@ head(PSdata)
 hist(PSdata$SCORESUM)
 ```
 
+Calculate var of epsilon given variance of beta and heritability
+```{r}
+
+h2 = 0.2
+sigepsi2 = (1-h2)/h2 * var(PSdata$SCORESUM)
+
+## homework problem: show analytically that variance of epsilon defined above leads to the heritability h2. 
+
+```
+
+
 Calculate phenotype and write file to be used with plink
 ```{r}
 
 nsamp = nrow(PSdata)
-set.seed(seednumber + 2); epsilon = rnorm(nsamp,mean=0,sd=sqrt(0.2)) ## use seednumber + 1 
+set.seed(seednumber + 2); ## use seednumber + 2 to get reproducible simulations
+epsilon = rnorm(nsamp,mean=0,sd=sqrt(sigepsi2) ) 
 PSdata = PSdata %>% mutate(PHENO = SCORESUM + epsilon)
 phenofile = paste0(out.dir,"simpheno-",seednumber,".txt")
 write_tsv(PSdata %>% select(FID,IID,PHENO,SCORESUM),path=paste0(phenofile))
+
+## homework problem: show empirically that the heritability of the phenotype is = h2
+## var(SCORESUM) / var(PHENO) 
 
 ```
 
@@ -131,15 +113,79 @@ plots histogram of p values
 
 qassoc = read_table(paste0(outheader, ".qassoc"))
 dim(qassoc)
-
+hist(qassoc$P)
 source(paste0(gist.dir, "qqunif.r")) ## load qqunif function from the gist folder
-qqunif(qassoc$P)
+qqunif.plot(qassoc$P,main = paste0("sim with h2 = ",round(h2,2)) )
+
 
 ```
+
+
+Adjust for population using principal components
+```{r}
+
+
+
+```
+
+
+
+PCA calculation using plink
+```{r}
+## generate PCs using plink ## this takes some time
+if(F)
+{comm = paste0(plinkname, " --bfile ", bedheader, " --pca ", " --out ", outheader)
+print(comm)
+system(comm)
+}
+
+## read plink calculated PCs
+pcplink = read_table2(paste0(outheader,".eigenvec"),col_names = FALSE)
+dim(pcplink)
+head(pcplink)
+names(pcplink) = c("FID","IID",paste0("PC", c(1:(ncol(pcplink)-2))) )
+popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
+
+pcplink = popinfo %>% inner_join(pcplink, by=c("FID"="FID", "IID"="IID"))
+## plot PC1 vs PC2
+pcplink %>% ggplot(aes(PC1,PC2,col=population)) + geom_point()
+
+```
+
+runnig GWAS adjusting for PCs
+```{r}
+
+## takes several minutes to run
+if(F)
+{covarfile = paste0(outheader,".eigenvec")
+comm = paste0(plinkname, " --bfile ", bedheader, " --linear --pheno ",phenofile, " --pheno-name PHENO --covar ", covarfile, " --covar-number 3-7", " --out ", outheader)
+print(comm)
+system(comm)
+}
+
+## read plink association results
+## keep only header and ADD rows from plink output 
+system(paste0("grep ADD ", outheader,".assoc.linear > ", outheader, ".assoc.linear.addonly") )
+assocPC = read_table(paste0(outheader, ".assoc.linear.addonly"),col_names=FALSE)
+tempo = read_table(paste0(outheader, ".assoc.linear"),n_max=1)
+names(assocPC) = names(tempo)
+
+assocPC = read_table(paste0(outheader,".linear."))
+indadd = igrowth.assoc$TEST=="ADD"
+titulo = "igrowh association adjusted for PCs"
+hist(igrowth.assoc$P[indadd],main=titulo)
+qqunif(igrowth.assoc$P[indadd],main=titulo)
+
+## adjusting for PC's p values follow the null distribution more closely.
+
+```
+
+
 
 calculate q values
 
 plot manhattan plot
+
 
 plot qqplot
 

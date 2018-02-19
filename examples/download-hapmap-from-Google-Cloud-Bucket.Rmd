@@ -1,0 +1,34 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{bash, eval=FALSE}
+
+## download hapmap genotypes
+
+mkdir /home/haky/IntroStatGen/data/
+mkdir /home/haky/IntroStatGen/data/hapmap
+
+wget https://storage.googleapis.com/introstatgen/hapmap.bed /home/haky/IntroStatGen/data/hapmap
+wget https://storage.googleapis.com/introstatgen/hapmap.bim /home/haky/IntroStatGen/data/hapmap
+wget https://storage.googleapis.com/introstatgen/hapmap.fam /home/haky/IntroStatGen/data/hapmap
+
+wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt /home/haky/IntroStatGen/data/hapmap/
+
+## maf 
+
+```
+
+```{r, echo=FALSE, eval=FALSE}
+if(F)
+{## run plink to get maf
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --freq --out ",out.dir, "hapmap"))
+mafdata = read_table(paste0(out.dir, "hapmap.frq"))
+hist(mafdata$MAF)
+
+## use plink to generate subset with MAF > 0.05
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --make-bed --maf 0.05 --chr 1-22 --out ",data.dir, "hapmap-common"))
+}
+```
+
