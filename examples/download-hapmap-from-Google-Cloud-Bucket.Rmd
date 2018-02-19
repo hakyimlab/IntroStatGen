@@ -30,5 +30,31 @@ hist(mafdata$MAF)
 ## use plink to generate subset with MAF > 0.05
 system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --make-bed --maf 0.05 --chr 1-22 --out ",data.dir, "hapmap-common"))
 }
+
+```
+
+```{r}
+library(tidyverse)
+data.dir = "/home/haky/IntroStatGen/data/hapmap/"
+bin.dir = "/home/haky/IntroStatGen/bin/"
+out.dir ="/home/haky/IntroStatGen/out/"
+gist.dir = "/home/haky/IntroStatGen/repo-IntroStatGen/gists/"
+
+```
+
+
+```{r}
+
+plinkname = paste0(bin.dir,"plink")
+bedheader = paste0(data.dir,"hapmap-common")
+
+## subset CEU, YRI, ASN
+popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
+popinfo %>% filter(population %in% c("CEU","YRI","CHB","JPT")) %>% write_tsv(paste0(data.dir,"hapmap2.list.txt"))
+
+comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed --keep ", data.dir,"hapmap2.list.txt ", " --maf 0.05 --out ", data.dir, "hapmap2-common")
+print(comm)
+system(comm)
+
 ```
 

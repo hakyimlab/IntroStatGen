@@ -14,13 +14,17 @@ data.dir = "/home/haky/IntroStatGen/data/hapmap/"
 bin.dir = "/home/haky/IntroStatGen/bin/"
 out.dir ="/home/haky/IntroStatGen/out/"
 gist.dir = "/home/haky/IntroStatGen/repo-IntroStatGen/gists/"
+
+plinkname = paste0(bin.dir,"plink")
+bedheader = paste0(data.dir,"hapmap2-common")
+
 ```
 
 
 
 ```{r}
 ##read hapmap.bim
-bimdata = read_tsv(paste0(data.dir, "hapmap-common.bim"),col_names = FALSE)
+bimdata = read_tsv(paste0(bedheader, ".bim"),col_names = FALSE)
 names(bimdata) = c("chr","rsid","dis","pos","A1","A2")
 
 ##sample prop % of SNPs to make them causal
@@ -58,7 +62,7 @@ calculate polygenic core using --score option in plink
 ```{r}
 
 ##https://www.cog-genomics.org/plink/1.9/score
-comm = paste0(bin.dir,"plink --bfile ", data.dir,"hapmap-common --score ", weightfile, " header sum --out ", out.dir,"polyscore-seed",seednumber)
+comm = paste0(bin.dir,"plink --bfile ", bedheader," --score ", weightfile, " header sum --out ", out.dir,"polyscore-seed",seednumber)
 print(comm)
 system( comm )
 
@@ -82,11 +86,13 @@ sigepsi2 = (1-h2)/h2 * var(PSdata$SCORESUM)
 Calculate phenotype and write file to be used with plink
 ```{r}
 
+phenofile = paste0(out.dir,"simpheno-",seednumber,".txt")
+
+
 nsamp = nrow(PSdata)
 set.seed(seednumber + 2); ## use seednumber + 2 to get reproducible simulations
 epsilon = rnorm(nsamp,mean=0,sd=sqrt(sigepsi2) ) 
 PSdata = PSdata %>% mutate(PHENO = SCORESUM + epsilon)
-phenofile = paste0(out.dir,"simpheno-",seednumber,".txt")
 write_tsv(PSdata %>% select(FID,IID,PHENO,SCORESUM),path=paste0(phenofile))
 
 ## homework problem: show empirically that the heritability of the phenotype is = h2
@@ -96,8 +102,6 @@ write_tsv(PSdata %>% select(FID,IID,PHENO,SCORESUM),path=paste0(phenofile))
 
 run GWAS
 ```{r }
-plinkname = paste0(bin.dir,"plink")
-bedheader = paste0(data.dir,"hapmap-common")
 outheader = paste0(out.dir,"simpheno-",seednumber)
 
 comm = paste0(plinkname, " --bfile ", bedheader, " --assoc --pheno ",phenofile, " --pheno-name PHENO ", " --out ", outheader)
@@ -119,15 +123,6 @@ qqunif.plot(qassoc$P,main = paste0("sim with h2 = ",round(h2,2)) )
 
 
 ```
-
-
-Adjust for population using principal components
-```{r}
-
-
-
-```
-
 
 
 PCA calculation using plink
@@ -161,38 +156,63 @@ if(F)
 comm = paste0(plinkname, " --bfile ", bedheader, " --linear --pheno ",phenofile, " --pheno-name PHENO --covar ", covarfile, " --covar-number 3-7", " --out ", outheader)
 print(comm)
 system(comm)
+## keep only header and ADD rows from plink output 
+system(paste0("grep ADD ", outheader,".assoc.linear > ", outheader, ".assoc.linear.addonly") )
 }
 
 ## read plink association results
-## keep only header and ADD rows from plink output 
-system(paste0("grep ADD ", outheader,".assoc.linear > ", outheader, ".assoc.linear.addonly") )
 assocPC = read_table(paste0(outheader, ".assoc.linear.addonly"),col_names=FALSE)
 tempo = read_table(paste0(outheader, ".assoc.linear"),n_max=1)
 names(assocPC) = names(tempo)
 
-assocPC = read_table(paste0(outheader,".linear."))
-indadd = igrowth.assoc$TEST=="ADD"
-titulo = "igrowh association adjusted for PCs"
-hist(igrowth.assoc$P[indadd],main=titulo)
-qqunif(igrowth.assoc$P[indadd],main=titulo)
+hist(assocPC$P)
+qqunif.plot(assocPC$P)
 
 ## adjusting for PC's p values follow the null distribution more closely.
+
+```
+Not much difference without adjusting for PC
+```{r}
+
+identical(assocPC$SNP,qassoc$SNP) ## if this is not TRUE, need to use inner_join to match SNPs
+ind=sample(1:nrow(assocPC), 1e4); plot(-log10(assocPC$P[ind]), -log10(qassoc$P[ind]) )
+ind=sample(1:nrow(assocPC), 1e4); plot(assocPC$BETA[ind], qassoc$BETA[ind] )
+
+```
+
+
+compare true betas with estimates
+Notice 90% of betas are 0
+```{r, echo=FALSE}
+install.packages("qqman")
+library(qqman)
+ind=sample(1:nrow(assocPC), 1e5);manhattan(qassoc[ind,])
 
 ```
 
 
 
-calculate q values
-
-plot manhattan plot
-
-
-plot qqplot
-
 calculate h2
+```{r}
+
+## calculate GRM
+gctafile = paste0(bin.dir,"gcta64")
+comm = paste0(gctafile, " --bfile ", bedheader," --make-grm-bin --out ", outheader)
+print(comm)
+system(comm)
+
+```
+
+
 
 calculate h2left using ch1 to ch10 
 
 calculate h2right using ch1 to ch10 
 
 use Yang formula to adjust
+
+
+```{r}
+
+```
+
