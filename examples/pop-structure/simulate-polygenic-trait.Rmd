@@ -35,6 +35,9 @@ data.dir = "/home/haky/IntroStatGen/data/hapmap/"
 bin.dir = "/home/haky/IntroStatGen/bin/"
 out.dir ="/home/haky/IntroStatGen/out/"
 
+
+
+
 ```
 
 
@@ -66,6 +69,7 @@ indC = sample(1:Mt, MC) ## select Mc SNPs to be simulated as causal
 Simulate betas
 ```{r simulate betas}
 
+set.seed(seednumber + 2)
 betaC = rnorm(MC,mean=0, sd=1/sqrt(MC))
 hist(betaC)
 
@@ -80,23 +84,49 @@ write_tsv(weightdata,path=weightfile)
 calculate polygenic core using --score option in plink
 ```{r}
 
-system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap-common --score ", weightfile, " --out ", out.dir,"polyscore-seed",seednumber) )
+##https://www.cog-genomics.org/plink/1.9/score
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap-common --score ", weightfile, " header sum --out ", out.dir,"polyscore-seed",seednumber) )
 
 ## read sum(beta * X) from polyscore-seed1.profile
 PSdata = read_table(paste0(out.dir,"polyscore-seed",seednumber,".profile"))
 head(PSdata)
-hist(PSdata$SCORE)
+hist(PSdata$SCORESUM)
 ```
 
 Calculate phenotype and write
 ```{r}
 
+nsamp = nrow(PSdata)
+set.seed(seednumber + 1); epsilon = rnorm(nsamp,mean=0,sd=sqrt(0.2)) ## use seednumber + 1 
+PSdata = PSdata %>% mutate(PHENO = SCORESUM + epsilon)
+phenofile = paste0(out.dir,"simpheno-",seednumber,".txt")
+write_tsv(PSdata %>% select(FID,IID,PHENO,SCORESUM),path=paste0(phenofile))
+
+```
+
+run GWAS
+```{r }
+plinkname = paste0(bin.dir,"plink")
+bedheader = paste0(data.dir,"hapmap-common")
+outheader = paste0(out.dir,"simpheno-",seednumber)
+
+comm = paste0(plinkname, " --bfile ", bedheader, " --assoc --pheno ",phenofile, " --pheno-name PHENO ", " --out ", outheader)
+print(comm)
+system(comm)
 ```
 
 
-run GWAS
-
 plots histogram of p values
+```{r}
+
+## read plink association results in simpheno-1.qassoc
+
+qassoc = read_table(paste0(outheader, ".qassoc"))
+dim(qassoc)
+
+
+
+```
 
 calculate q values
 
