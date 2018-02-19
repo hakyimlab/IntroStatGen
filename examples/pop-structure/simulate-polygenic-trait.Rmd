@@ -5,16 +5,94 @@ editor_options:
   chunk_output_type: inline
 ---
 
-Simulate betas
-```{r simulate betas}
+```{bash}
+#ls
+```
 
+
+```{bash, eval=FALSE}
+
+## download hapmap genotypes
+
+mkdir /home/haky/IntroStatGen/data/
+mkdir /home/haky/IntroStatGen/data/hapmap
+
+wget https://storage.googleapis.com/introstatgen/hapmap.bed /home/haky/IntroStatGen/data/hapmap
+wget https://storage.googleapis.com/introstatgen/hapmap.bim /home/haky/IntroStatGen/data/hapmap
+wget https://storage.googleapis.com/introstatgen/hapmap.fam /home/haky/IntroStatGen/data/hapmap
+
+wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt /home/haky/IntroStatGen/data/hapmap/
+
+## maf 
+
+```
+
+
+```{r}
+##install.packages("tidyverse")
+library(tidyverse)
+data.dir = "/home/haky/IntroStatGen/data/hapmap/"
+bin.dir = "/home/haky/IntroStatGen/bin/"
+out.dir ="/home/haky/IntroStatGen/out/"
+
+```
+
+
+```{r, echo=FALSE}
+
+## run plink to get maf
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --freq --out ",out.dir, "hapmap"))
+mafdata = read_table(paste0(out.dir, "hapmap.frq"))
+hist(mafdata$MAF)
+
+## use plink to generate subset with MAF > 0.05
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --make-bed --maf 0.05 --chr 1-22 --out ",data.dir, "hapmap-common"))
+
+##read hapmap.bim
+bimdata = read_tsv(paste0(data.dir, "hapmap-common.bim"),col_names = FALSE)
+names(bimdata) = c("chr","rsid","dis","pos","A1","A2")
+
+##sample prop % of SNPs to make them causal
+propC = 0.10
+Mt = nrow(bimdata)
+MC = round(propC * Mt) ## number of causal SNPs
+seednumber = 1
+set.seed(seednumber) ## we want to get the same SNPs each time we run this
+indC = sample(1:Mt, MC) ## select Mc SNPs to be simulated as causal
 
 
 ```
 
-calculate polygenic core
+Simulate betas
+```{r simulate betas}
 
-simulate phenotype
+betaC = rnorm(MC,mean=0, sd=1/sqrt(MC))
+hist(betaC)
+
+## generate weights file, Y = sum(beta * X) + error
+weightdata = bimdata[indC,] %>% select(rsid,A1) 
+weightdata$betas = betaC
+weightfile = paste0(out.dir, "weights-seed",seednumber,".txt")
+write_tsv(weightdata,path=weightfile)
+
+```
+
+calculate polygenic core using --score option in plink
+```{r}
+
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap-common --score ", weightfile, " --out ", out.dir,"polyscore-seed",seednumber) )
+
+## read sum(beta * X) from polyscore-seed1.profile
+PSdata = read_table(paste0(out.dir,"polyscore-seed",seednumber,".profile"))
+head(PSdata)
+hist(PSdata$SCORE)
+```
+
+Calculate phenotype and write
+```{r}
+
+```
+
 
 run GWAS
 
