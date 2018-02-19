@@ -35,13 +35,10 @@ data.dir = "/home/haky/IntroStatGen/data/hapmap/"
 bin.dir = "/home/haky/IntroStatGen/bin/"
 out.dir ="/home/haky/IntroStatGen/out/"
 gist.dir = "/home/haky/IntroStatGen/IntroStatGen/examples/"
-
-
-
 ```
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 ## run plink to get maf
 system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --freq --out ",out.dir, "hapmap"))
@@ -50,6 +47,11 @@ hist(mafdata$MAF)
 
 ## use plink to generate subset with MAF > 0.05
 system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --make-bed --maf 0.05 --chr 1-22 --out ",data.dir, "hapmap-common"))
+```
+
+
+
+```{r}
 
 ##read hapmap.bim
 bimdata = read_tsv(paste0(data.dir, "hapmap-common.bim"),col_names = FALSE)
@@ -60,16 +62,20 @@ propC = 0.10
 Mt = nrow(bimdata)
 MC = round(propC * Mt) ## number of causal SNPs
 seednumber = 1
-set.seed(seednumber) ## we want to get the same SNPs each time we run this
-indC = sample(1:Mt, MC) ## select Mc SNPs to be simulated as causal
-
 
 ```
 
-Simulate betas
-```{r simulate betas}
+Randomly choose 10% SNPs as causal
+```{r, eval=FALSE}
+set.seed(seednumber) ## we want to get the same SNPs each time we run this
+indC = sample(1:Mt, MC) ## select Mc SNPs to be simulated as causal
 
-set.seed(seednumber + 2)
+```
+
+Simulate betas as normally distributed for the 10% of SNPs selected above
+```{r simulate betas, eval=FALSE}
+
+set.seed(seednumber + 1)
 betaC = rnorm(MC,mean=0, sd=1/sqrt(MC))
 hist(betaC)
 
@@ -99,7 +105,7 @@ Calculate phenotype and write file to be used with plink
 ```{r}
 
 nsamp = nrow(PSdata)
-set.seed(seednumber + 1); epsilon = rnorm(nsamp,mean=0,sd=sqrt(0.2)) ## use seednumber + 1 
+set.seed(seednumber + 2); epsilon = rnorm(nsamp,mean=0,sd=sqrt(0.2)) ## use seednumber + 1 
 PSdata = PSdata %>% mutate(PHENO = SCORESUM + epsilon)
 phenofile = paste0(out.dir,"simpheno-",seednumber,".txt")
 write_tsv(PSdata %>% select(FID,IID,PHENO,SCORESUM),path=paste0(phenofile))
@@ -127,6 +133,7 @@ qassoc = read_table(paste0(outheader, ".qassoc"))
 dim(qassoc)
 
 source(paste0(gist.dir, "qqunif.r")) ## load qqunif function from the gist folder
+qqunif(qassoc$P)
 
 ```
 
