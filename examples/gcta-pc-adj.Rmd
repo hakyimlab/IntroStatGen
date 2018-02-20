@@ -1,0 +1,24 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+calculate h2 adjusting for 5 pcs
+## doesnt seem to help to adjust for pcs
+```{r}
+
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, " --pheno ", phenofile , " --qcovar ", outheader, "-gcta-covar.eigenvec"," --out ", outheader, "-gcta-all-adj-pc")
+print(comm)
+system(comm)
+
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-left --pheno ", phenofile , " --qcovar ", outheader, "-gcta-covar.eigenvec"," --out ", outheader, "-gcta-left-adj-pc")
+print(comm)
+system(comm)
+
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-right --pheno ", phenofile , " --qcovar ", outheader, "-gcta-covar.eigenvec"," --out ", outheader, "-gcta-right-adj-pc")
+print(comm)
+system(comm)
+
+
+
+```

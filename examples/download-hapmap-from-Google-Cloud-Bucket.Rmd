@@ -56,5 +56,14 @@ comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed -
 print(comm)
 system(comm)
 
+##left and right plink files
+comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed --keep ", data.dir,"hapmap2.list.txt ", " --maf 0.05", " --chr 1-10 " , " --out ", data.dir, "hapmap2-common-left")
+print(comm)
+system(comm)
+
+comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed --keep ", data.dir,"hapmap2.list.txt ", " --maf 0.05", " --chr 11-22 " , " --out ", data.dir, "hapmap2-common-right")
+print(comm)
+system(comm)
+
 ```
 
