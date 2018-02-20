@@ -56,7 +56,17 @@ comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed -
 print(comm)
 system(comm)
 
+
 ##left and right plink files
+comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed ", " --maf 0.05", " --chr 1-8 " , " --out ", data.dir, "hapmap-common-left")
+print(comm)
+system(comm)
+
+comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed ",  " --maf 0.05", " --chr 9-22 " , " --out ", data.dir, "hapmap-common-right")
+print(comm)
+system(comm)
+
+##hapmap2 left and right plink files
 comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed --keep ", data.dir,"hapmap2.list.txt ", " --maf 0.05", " --chr 1-10 " , " --out ", data.dir, "hapmap2-common-left")
 print(comm)
 system(comm)
@@ -66,4 +76,28 @@ print(comm)
 system(comm)
 
 ```
+
+EURsubset
+```{r}
+
+## subset CEU, TSI
+popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
+popinfo %>% filter(population %in% c("CEU","TSI")) %>% write_tsv(paste0(data.dir,"EUR.txt"))
+
+comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed --keep ", data.dir,"EUR.txt ", " --maf 0.05 --out ", data.dir, "EUR-common")
+print(comm)
+system(comm)
+
+
+##left and right plink files
+comm = paste0(plinkname, " --bfile ", data.dir, "EUR-common ", " --make-bed ", " --maf 0.05", " --chr 1-8 " , " --out ", data.dir, "EUR-common-left")
+print(comm)
+system(comm)
+
+comm = paste0(plinkname, " --bfile ", data.dir, "EUR-common ", " --make-bed ",  " --maf 0.05", " --chr 9-22 " , " --out ", data.dir, "EUR-common-right")
+print(comm)
+system(comm)
+
+```
+
 
