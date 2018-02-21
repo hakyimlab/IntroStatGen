@@ -38,7 +38,7 @@ mv hapmap* data/hapmap/
 
 wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt 
 
-mv relationships_w_pops_051208.txt hapmap/data/
+mv relationships_w_pops_051208.txt data/hapmap/
 
 ```
 
