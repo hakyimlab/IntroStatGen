@@ -27,11 +27,11 @@ data.dir = "data/hapmap/"
 out.dir ="out/"
 gist.dir = "repo-IntroStatGen/gists/"
 
-plinkname = paste0(bin.dir,"plink")
+plinkname = paste0("./",bin.dir,"plink")
 header0 = "founders-common" 
 bedheader = paste0(data.dir,header0)
 
-gctafile = paste0(bin.dir,"gcta64")
+gctaname = paste0(bin.dir,"gcta64")
 
 seednumber = 1
 outheader = paste0(out.dir,header0,"-",seednumber)
@@ -55,7 +55,7 @@ Calculate GRM. This takes long time, and you may need 4GB+ of memory.
 ## calculate GRM
 if(from_scratch)
 {
-comm = paste0(gctafile, " --bfile ", bedheader," --make-grm-bin --out ", outheader)
+comm = paste0(gctaname, " --bfile ", bedheader," --make-grm-bin --out ", outheader)
 print(comm)
 system(comm)
 }
@@ -63,7 +63,7 @@ system(comm)
 ## calculate grm left using ch1 to ch8 
 if(from_scratch)
 {
-comm = paste0(gctafile, " --bfile ", bedheader,"-left --make-grm-bin --out ", outheader,"-left")
+comm = paste0(gctaname, " --bfile ", bedheader,"-left --make-grm-bin --out ", outheader,"-left")
 print(comm)
 system(comm)
 }
@@ -71,7 +71,7 @@ system(comm)
 ## calculate grm right using ch9 to ch22 
 if(from_scratch)
 {
-comm = paste0(gctafile, " --bfile ", bedheader,"-right --make-grm-bin --out ", outheader,"-right")
+comm = paste0(gctaname, " --bfile ", bedheader,"-right --make-grm-bin --out ", outheader,"-right")
 print(comm)
 system(comm)
 }
@@ -79,7 +79,7 @@ system(comm)
 
 Calculate PCs from GRM and plot PC1 vs PC2. Once GRM is computed, PC calculation is very fast.
 ```{r}
-comm = paste0(gctafile, " --pca 5 ", " --grm ", outheader , " --out ", outheader)
+comm = paste0(gctaname, " --pca 5 ", " --grm ", outheader , " --out ", outheader)
 print(comm)
 system(comm)
 
@@ -228,17 +228,17 @@ Calculate heritability
 grmcutoff = 1 ## this is no cutoff. typically one would use --grm-cutoff 0.025
 
 ## calculate h2 using all chromosomes
-comm = paste0(gctafile, " --reml ", " --grm ", outheader, " --pheno ", phenofile ,"  --grm-cutoff ",grmcutoff, " --out ", outheader, "-gcta-all")
+comm = paste0(gctaname, " --reml ", " --grm ", outheader, " --pheno ", phenofile ,"  --grm-cutoff ",grmcutoff, " --out ", outheader, "-gcta-all")
 print(comm)
 system(comm)
 
 ## calculate heritability using chr 1 to chr 8)
-comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-left --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-left")
+comm = paste0(gctaname, " --reml ", " --grm ", outheader, "-left --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-left")
 print(comm)
 system(comm)
 
 ## calculate heritability using chr 9 to chr 22)
-comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-right --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-right")
+comm = paste0(gctaname, " --reml ", " --grm ", outheader, "-right --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-right")
 print(comm)
 system(comm)
 

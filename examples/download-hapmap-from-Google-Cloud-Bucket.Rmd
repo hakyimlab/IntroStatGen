@@ -24,6 +24,9 @@ mkdir bin
 
 ## Download plink from https://www.cog-genomics.org/plink2
 ## wget https://www.cog-genomics.org/static/bin/plink180109/plink_mac.zip
+## Linux
+## wget https://www.cog-genomics.org/static/bin/plink180109/plink_linux_x86_64.zip
+## wget http://cnsgenomics.com/software/gcta/gcta_1.91.2beta.zip
 
 mkdir out
 
@@ -51,8 +54,9 @@ bin.dir = "bin/"
 out.dir ="out/"
 gist.dir = "repo-IntroStatGen/gists/"
 
+header0 = "hapmap"
 plinkname = paste0(bin.dir,"plink")
-bedheader = paste0(data.dir,"hapmap")
+bedheader = paste0(data.dir,header0)
 
 ```
 
@@ -60,7 +64,7 @@ Create plink files with founders only
 ```{r}
 
 ## subset founders
-
+getwd()
 comm = paste0(plinkname, " --bfile ", bedheader, " --make-bed --filter-founders ", " --maf 0.05 --out ", data.dir, "founders-common")
 print(comm)
 system(comm)
