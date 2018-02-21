@@ -99,5 +99,24 @@ print(comm)
 system(comm)
 
 ```
+Founders only
+```{r}
 
+## subset founders
+
+comm = paste0(plinkname, " --bfile ", data.dir, "hapmap-common ", " --make-bed --filter-founders ", " --maf 0.05 --out ", data.dir, "founders-common")
+print(comm)
+system(comm)
+
+
+##left and right plink files
+comm = paste0(plinkname, " --bfile ", data.dir, "founders-common ", " --make-bed  --filter-founders ", " --maf 0.05", " --chr 1-8 " , " --out ", data.dir, "founders-common-left")
+print(comm)
+system(comm)
+
+comm = paste0(plinkname, " --bfile ", data.dir, "founders-common ", " --make-bed  --filter-founders ",  " --maf 0.05", " --chr 9-22 " , " --out ", data.dir, "founders-common-right")
+print(comm)
+system(comm)
+
+```
 
