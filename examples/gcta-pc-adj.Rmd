@@ -34,15 +34,15 @@ system(comm)
 }
 
 ## read plink calculated PCs
-pcplink = read_table2(paste0(outheader,".eigenvec"),col_names = FALSE)
+pcplink = read_table2(paste0("/home/haky/IntroStatGen/out/plink",".eigenvec"),col_names = FALSE)
 dim(pcplink)
 head(pcplink)
 names(pcplink) = c("FID","IID",paste0("PC", c(1:(ncol(pcplink)-2))) )
-popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
+##popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
 
 pcplink = popinfo %>% inner_join(pcplink, by=c("FID"="FID", "IID"="IID"))
 ## plot PC1 vs PC2
-pcplink %>% ggplot(aes(PC1,PC2,col=population)) + geom_point()
+pcplink %>% ggplot(aes(PC1,-PC2,col=population)) + geom_point()
 
 }
 ```

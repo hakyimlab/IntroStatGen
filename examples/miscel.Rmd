@@ -3,11 +3,31 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+```{r, echo=FALSE, eval=FALSE}
+if(F)
+{
+  ## run plink to get maf
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --freq --out ",out.dir, "hapmap"))
+mafdata = read_table(paste0(out.dir, "hapmap.frq"))
+hist(mafdata$MAF)
 
-
-```{r}
-
-
+## use plink to generate subset with MAF > 0.05
+system(paste0(bin.dir,"plink --bfile ", data.dir,"hapmap --make-bed --maf 0.05 --chr 1-22 --out ",data.dir, "hapmap-common"))
+}
 
 ```
+
+create subset of hapmap genotypes with common SNPs only
+```{r}
+
+## list of CEU, YRI, ASN individuals
+popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
+popinfo %>% filter(population %in% c("CEU","YRI","CHB","JPT")) %>% write_tsv(paste0(data.dir,"hapmap2.list.txt"))
+
+comm = paste0(plinkname, " --bfile ", bedheader, " --make-bed --keep ", data.dir,"hapmap2.list.txt ", " --maf 0.05 --out ", data.dir, "hapmap2-common")
+print(comm)
+system(comm)
+
+```
+
 
