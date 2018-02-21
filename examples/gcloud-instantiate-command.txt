@@ -1,0 +1,63 @@
+
+for ii in {6..7}; do
+
+gcloud compute --project "introstatgen" disks create "instance-$ii" --size "10" --zone "us-central1-c" --source-snapshot "hki-machine-snapshot-2018-02-21" --type "pd-standard"
+
+gcloud beta compute \
+--project "introstatgen" instances create "instance-$ii" \
+--zone "us-central1-c" --machine-type "n1-standard-1" \
+--subnet "default" \
+--metadata "ssh-keys=haky:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDr+df4PivSEb3Dre6fiRhL5tWiRmKj9JqsYIoiJRO2hbBktnIlzd6fKBbOWoPPaSfoysFidFbLHB09MYnPZqgAKPl6k22eheMjZPWtHyfzoD/YcNHjgDUFtTopTh9egjwptnOlyH4z+Hj5nyN6SFKhGn9WVKC+ldUELvPdor89xeg7vOM/eGzTGWMbLzetFnpDIQ8t4ubHQG0EPf4T/VlBTzCk3iQx5OkBUwWEzXf8GB1/3DEub0oqz0J28MnJIBRkzT2yLeKGF2746ZhlYlS/riOPD3u9xKfu4Dd0/bIc/gFW2emDFGelDUwS/uFUxaULk6aULiPlBG7D9477JCyX haky@HKI-iMac.local" \
+--no-restart-on-failure --maintenance-policy "TERMINATE" \
+--preemptible --service-account "10877517008-compute@developer.gserviceaccount.com" \
+--scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
+--min-cpu-platform "Automatic" --tags "rstudio","http-server" \
+--disk "name=instance-$ii,device-name=instance-$ii,mode=rw,boot=yes,auto-delete=yes"
+
+done
+
+
+
+
+
+
+docker run -d  -p 8787:8787  -v $(pwd)/IntroStatGen:/home/$USER/IntroStatGen -e USERID=$UID  -e USER=student -e PASSWORD=secretp -e ROOT=TRUE rocker/tidyverse
+
+
+
+
+
+
+--metadata "startup-script=docker run -d  -p 8787:8787  -v $(pwd)/IntroStatGen:/home/$USER/IntroStatGen -e USERID=$UID  -e USER=student -e PASSWORD=secretp -e ROOT=TRUE rocker/tidyverse,ssh-keys=haky:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDr+df4PivSEb3Dre6fiRhL5tWiRmKj9JqsYIoiJRO2hbBktnIlzd6fKBbOWoPPaSfoysFidFbLHB09MYnPZqgAKPl6k22eheMjZPWtHyfzoD/YcNHjgDUFtTopTh9egjwptnOlyH4z+Hj5nyN6SFKhGn9WVKC+ldUELvPdor89xeg7vOM/eGzTGWMbLzetFnpDIQ8t4ubHQG0EPf4T/VlBTzCk3iQx5OkBUwWEzXf8GB1/3DEub0oqz0J28MnJIBRkzT2yLeKGF2746ZhlYlS/riOPD3u9xKfu4Dd0/bIc/gFW2emDFGelDUwS/uFUxaULk6aULiPlBG7D9477JCyX haky@HKI-iMac.local" \
+
+
+
+
+------------
+
+gcloud compute --project "introstatgen" disks create "instance-3" --size "10" --zone "us-central1-c" --source-snapshot "hki-machine-snapshot-2018-02-21" --type "pd-standard"
+
+gcloud beta compute --project "introstatgen" instances create "instance-3" --zone "us-central1-c" --machine-type "n1-standard-1" --subnet "default" --maintenance-policy "MIGRATE" --service-account "10877517008-compute@developer.gserviceaccount.com" --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --min-cpu-platform "Automatic" --disk "name=instance-3,device-name=instance-3,mode=rw,boot=yes,auto-delete=yes"
+
+
+docker run -d  -p 8787:8787  -v $(pwd)/IntroStatGen:/home/$USER/IntroStatGen -e USERID=$UID  -e USER=student -e PASSWORD=kuran4-zym -e ROOT=TRUE rocker/tidyverse
+
+
+
+gcloud beta compute \
+--project "introstatgen" instances create "instance-1" \
+--zone "us-central1-c" \
+--machine-type "n1-standard-1" \
+--subnet "default" \
+--metadata "startup-script=docker run -d  -p 8787:8787  -v $(pwd)/IntroStatGen:/home/$USER/IntroStatGen -e USERID=$UID  -e USER=student -e PASSWORD=secretpassword -e ROOT=TRUE rocker/tidyverse" \
+--no-restart-on-failure --maintenance-policy "TERMINATE" \
+--preemptible \
+--service-account "10877517008-compute@developer.gserviceaccount.com" \
+--scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
+--min-cpu-platform "Automatic" \
+--tags "rstudio","http-server" \
+--image "debian-9-stretch-v20180206" \
+--image-project "debian-cloud" \
+--boot-disk-size "10" \
+--boot-disk-type "pd-standard" \
+--boot-disk-device-name "instance-1"
