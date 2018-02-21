@@ -22,16 +22,23 @@ mkdir data/hapmap
 mkdir bin
 ## plink and gcta64 should be downloaded and placed under bin
 
+## Download plink from https://www.cog-genomics.org/plink2
+## wget https://www.cog-genomics.org/static/bin/plink180109/plink_mac.zip
+
 mkdir out
 
 ## updated Rmd files
 git clone https://github.com/hakyimlab/IntroStatGen.git repo-IntroStatGen
 
-wget https://storage.googleapis.com/introstatgen/hapmap.bed data/hapmap
-wget https://storage.googleapis.com/introstatgen/hapmap.bim data/hapmap
-wget https://storage.googleapis.com/introstatgen/hapmap.fam data/hapmap
+wget https://storage.googleapis.com/introstatgen/hapmap.bed 
+wget https://storage.googleapis.com/introstatgen/hapmap.bim 
+wget https://storage.googleapis.com/introstatgen/hapmap.fam 
 
-wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt data/hapmap/
+mv hapmap* data/hapmap/
+
+wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt 
+
+mv relationships_w_pops_051208.txt hapmap/data/
 
 ```
 
