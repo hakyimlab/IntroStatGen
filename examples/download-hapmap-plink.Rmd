@@ -1,0 +1,67 @@
+---
+title: "R Notebook"
+output:
+  pdf_document: default
+  html_notebook: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup}
+
+work.dir = "~/Downloads/tempo/"
+knitr::opts_knit$set(root.dir = normalizePath(work.dir)) 
+
+```
+
+```{r}
+library(tidyverse)
+## qqunif function
+source("https://gist.githubusercontent.com/hakyim/38431b74c6c0bf90c12f/raw/21fbae9a48dc475f42fa60f0ef5509d071dea873/qqunif")
+```
+
+**Download plink for mac**
+```{bash}
+
+## Download plink from https://www.cog-genomics.org/plink2
+wget https://www.cog-genomics.org/static/bin/plink180109/plink_mac.zip
+
+```
+
+**Download HapMap data**
+```{bash }
+
+## Download plink format hapmap 3 genotype data
+## http://www.sanger.ac.uk/resources/downloads/human/hapmap3.html
+## wget -r ftp://ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/ (This also downloads tar-ed individual population ped/map files)
+wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/hapmap3_r3_b36_fwd.consensus.qc.poly.map
+wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/hapmap3_r3_b36_fwd.consensus.qc.poly.ped
+
+# FINISHED --2018-01-26 10:46:48--
+# Total wall clock time: 3m 56s
+# Downloaded: 4 files, 2.5G in 3m 56s (10.9 MB/s)
+
+## remove annoying DS_Store files in OSX
+## find . -name '.DS_Store' |xargs rm
+
+## Mac OSX needs command line toos + homebrew installed. 
+## then run 
+## brew update
+## brew install wget
+
+## cd and use tabs to get to subfolder where gz files are
+gunzip *.gz
+```
+
+```{}
+## get reported population data
+wget ftp://ftp.ncbi.nlm.nih.gov/hapmap/phase_3/relationships_w_pops_051208.txt
+```
+
+
+```{}
+## create binary plink file for chr 22 (to have small example)
+plink_mac/plink --file ftp.ncbi.nlm.nih.gov/hapmap/genotypes/2010-05_phaseIII/plink_format/hapmap3_r3_b36_fwd.consensus.qc.poly --make-bed --chr 22 --out hapmapch22
+
+```
+

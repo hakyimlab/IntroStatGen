@@ -1,0 +1,88 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+calculate h2 adjusting for 5 pcs
+## doesnt seem to help to adjust for pcs
+```{r}
+
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, " --pheno ", phenofile , " --qcovar ", outheader, "-gcta-covar.eigenvec"," --out ", outheader, "-gcta-all-adj-pc")
+print(comm)
+system(comm)
+
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-left --pheno ", phenofile , " --qcovar ", outheader, "-gcta-covar.eigenvec"," --out ", outheader, "-gcta-left-adj-pc")
+print(comm)
+system(comm)
+
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-right --pheno ", phenofile , " --qcovar ", outheader, "-gcta-covar.eigenvec"," --out ", outheader, "-gcta-right-adj-pc")
+print(comm)
+system(comm)
+
+
+
+```
+
+PCA calculation using plink
+```{r}
+if(F)
+{## generate PCs using plink ## this takes some time
+if(from_scratch)
+{comm = paste0(plinkname, " --bfile ", bedheader, " --pca ", " --out ", outheader)
+print(comm)
+system(comm)
+}
+
+## read plink calculated PCs
+pcplink = read_table2(paste0(outheader,".eigenvec"),col_names = FALSE)
+dim(pcplink)
+head(pcplink)
+names(pcplink) = c("FID","IID",paste0("PC", c(1:(ncol(pcplink)-2))) )
+popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
+
+pcplink = popinfo %>% inner_join(pcplink, by=c("FID"="FID", "IID"="IID"))
+## plot PC1 vs PC2
+pcplink %>% ggplot(aes(PC1,PC2,col=population)) + geom_point()
+
+}
+```
+
+runnig GWAS adjusting for PCs
+```{r}
+
+if(F)
+{## takes several minutes to run
+if(from_scratch)
+{covarfile = paste0(outheader,".eigenvec")
+comm = paste0(plinkname, " --bfile ", bedheader, " --linear --pheno ",phenofile, " --pheno-name PHENO --covar ", covarfile, " --covar-number 3-7", " --out ", outheader)
+print(comm)
+system(comm)
+## keep only header and ADD rows from plink output 
+system(paste0("grep ADD ", outheader,".assoc.linear > ", outheader, ".assoc.linear.addonly") )
+}
+
+## read plink association results
+assocPC = read_table(paste0(outheader, ".assoc.linear.addonly"),col_names=FALSE)
+tempo = read_table(paste0(outheader, ".assoc.linear"),n_max=1)
+names(assocPC) = names(tempo)
+
+hist(assocPC$P)
+qqunif.plot(assocPC$P)
+
+}
+
+
+## adjusting for PC's p values follow the null distribution more closely.
+
+```
+
+
+Not much difference without adjusting for PC
+```{r}
+
+identical(assocPC$SNP,qassoc$SNP) ## if this is not TRUE, need to use inner_join to match SNPs
+ind=sample(1:nrow(assocPC), 1e4); plot(-log10(assocPC$P[ind]), -log10(qassoc$P[ind]) )
+ind=sample(1:nrow(assocPC), 1e4); plot(assocPC$BETA[ind], qassoc$BETA[ind] )
+
+```
+

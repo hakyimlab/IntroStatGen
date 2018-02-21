@@ -1,0 +1,254 @@
+---
+title: "Simulating Complex Traits"
+output:
+  pdf_document: default
+  html_notebook: default
+editor_options:
+  chunk_output_type: inline
+---
+
+
+Load packages and define folders
+```{r}
+##install.packages("tidyverse")
+library(tidyverse)
+data.dir = "/home/haky/IntroStatGen/data/hapmap/"
+bin.dir = "/home/haky/IntroStatGen/bin/"
+out.dir ="/home/haky/IntroStatGen/out/"
+gist.dir = "/home/haky/IntroStatGen/repo-IntroStatGen/gists/"
+
+plinkname = paste0(bin.dir,"plink")
+header0 = "founders-common" ## EUR-common, hapmap-common, hapmap2-common
+bedheader = paste0(data.dir,header0)
+
+seednumber = 1
+outheader = paste0(out.dir,header0,"-",seednumber)
+
+##sample prop % of SNPs to make them causal
+propC = 0.10
+
+## run from scratch if header0 changes
+from_scratch = FALSE
+
+```
+
+calculate GRM
+```{r}
+
+## calculate GRM
+if(from_scratch)
+{gctafile = paste0(bin.dir,"gcta64")
+comm = paste0(gctafile, " --bfile ", bedheader," --make-grm-bin --out ", outheader)
+print(comm)
+system(comm)
+}
+
+## calculate grm left using ch1 to ch8 
+if(from_scratch)
+{gctafile = paste0(bin.dir,"gcta64")
+comm = paste0(gctafile, " --bfile ", bedheader,"-left --make-grm-bin --out ", outheader,"-left")
+print(comm)
+system(comm)
+}
+
+## calculate grm right using ch9 to ch22 
+if(from_scratch)
+{gctafile = paste0(bin.dir,"gcta64")
+comm = paste0(gctafile, " --bfile ", bedheader,"-right --make-grm-bin --out ", outheader,"-right")
+print(comm)
+system(comm)
+}
+```
+
+Read marker information from plinkfile.bim
+```{r}
+##read hapmap.bim
+
+bimdata = read_tsv(paste0(bedheader, ".bim"),col_names = FALSE)
+names(bimdata) = c("chr","rsid","dis","pos","A1","A2")
+head(bimdata)
+Mt = nrow(bimdata)
+MC = round(propC * Mt) ## number of causal SNPs
+
+```
+
+
+Randomly choose propC% SNPs as causal
+```{r, eval=FALSE}
+
+set.seed(seednumber) ## we want to get the same SNPs each time we run this
+indC = sample(1:Mt, MC) ## select Mc SNPs to be simulated as causal
+
+```
+
+Simulate betas as normally distributed for the propC% of SNPs selected above
+```{r simulate betas, eval=FALSE}
+
+set.seed(seednumber + 1)
+betaC = rnorm(MC,mean=0, sd=1/sqrt(MC))
+hist(betaC)
+
+## generate weights file, Y = sum(weight * X) + error; we call beta or weight interchangeably
+weightdata = bimdata[indC,] %>% select(rsid,A1) 
+weightdata$betas = betaC
+weightfile = paste0(out.dir, "weights-seed-",seednumber,".txt")
+write_tsv(weightdata,path=weightfile)
+
+```
+
+Calculate the genetic component using plink --score
+```{r}
+## run plink -score
+comm = paste0(bin.dir,"plink --bfile ", bedheader," --score ", weightfile, " header sum --out ", out.dir,"polyscore-seed",seednumber)
+print(comm)
+system( comm )
+
+## read sum(beta * X) from polyscore-seed1.profile
+PSdata = read_table2(paste0(out.dir,"polyscore-seed",seednumber,".profile"))
+head(PSdata)
+hist(PSdata$SCORESUM)
+```
+
+Calculate var of epsilon as a function of variance of beta and heritability
+```{r}
+
+h2 = 0.60
+sigepsi2 = (1-h2)/h2 * var(PSdata$SCORESUM)
+print(h2)
+print(sigepsi2,2)
+print(var(PSdata$SCORESUM)/(var(PSdata$SCORESUM)+sigepsi2))
+
+## homework problem: show analytically that variance of epsilon defined above leads to the heritability h2. 
+## i.e. that h2 = var(sum(beta X)) / var(Y); knowing that var(Y) = var(sum(beta X)) + var(epsilon)
+
+```
+
+Calculate phenotype and write file to be used with plink
+```{r}
+
+phenofile = paste0(outheader,".txt")
+nsamp = nrow(PSdata)
+set.seed(seednumber + 2); ## use seednumber + 2 to get reproducible simulations
+epsilon = rnorm(nsamp,mean=0,sd=sqrt(sigepsi2) )
+PSdata = PSdata %>% mutate(PHENO = SCORESUM + epsilon)
+write_tsv(PSdata %>% select(FID,IID,PHENO,SCORESUM),path=paste0(phenofile))
+
+## homework problem: show empirically that the heritability of the phenotype is = h2
+## hint var(SCORESUM) / var(PHENO) 
+
+```
+
+Run GWAS with the phenotype
+```{r }
+
+comm = paste0(plinkname, " --bfile ", bedheader, " --assoc --pheno ",phenofile, " --pheno-name PHENO ", " --out ", outheader)
+print(comm)
+system(comm)
+```
+
+
+Plots histogram of p values
+```{r}
+
+qassoc = read_table(paste0(outheader, ".qassoc"))
+dim(qassoc)
+head(qassoc)
+hist(qassoc$P)
+source(paste0(gist.dir, "qqunif.r")) ## load qqunif function from the gist folder
+qqunif.plot(qassoc$P,main = paste0("sim with h2 = ",round(h2,2)) )
+
+```
+
+```{r, echo=FALSE}
+##install.packages("qqman")
+library(qqman)
+ind=sample(1:nrow(assocPC), 1e5) ## select subset to plot. We wouldn't do this in a real analysis since we could be missing significant hits by subsampling.
+manhattan(qassoc[ind,])
+
+```
+
+compare true betas with estimates
+Notice 90% of betas are 0
+plot estimated betas vs true betas
+```{r}
+
+## inner join qassoc and weights
+tempo = qassoc %>% rename(betahat = BETA)%>% left_join(weightdata %>% select(rsid,betas),by=c("SNP"="rsid")) 
+tempo = tempo %>% mutate(beta = ifelse(is.na(betas),0,betas)) ## if not in weights file, beta=0
+## plot
+tempo %>% sample_frac(0.10) %>% ggplot(aes(betas, betahat)) + geom_point() + geom_abline()
+
+## small region plot beta vs position
+
+## LD
+
+```
+
+
+
+
+calculate heritability
+
+```{r}
+grmcutoff = 1 ## this is no cutoff. typically one would use --grm-cutoff 0.025
+
+## calculate h2 using all chromosomes
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, " --pheno ", phenofile ,"  --grm-cutoff ",grmcutoff, " --out ", outheader, "-gcta-all")
+print(comm)
+system(comm)
+
+## calculate heritability using chr 1 to chr 8)
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-left --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-left")
+print(comm)
+system(comm)
+
+## calculate heritability using chr 9 to chr 22)
+comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-right --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-right")
+print(comm)
+system(comm)
+
+```
+
+
+
+```{r}
+
+## generate PCs with gcta (above we generated pcs with plink but need to get rid of header and I only want 5 pcs. Once the GRM is calculated, PCs are cheap to generate: 1.3 seconds)
+
+
+comm = paste0(gctafile, " --pca 5 ", " --grm ", outheader , " --out ", outheader, "-gcta-covar")
+print(comm)
+system(comm)
+
+
+```
+
+
+Read GRM
+
+```{r}
+
+titulo = "all pop GRM first row"
+grmmat = OmicKriging::read_GRMBin(paste0("/home/haky/IntroStatGen/out/simpheno-all-1.grm"))
+tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,])
+tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID"))
+hist(tempo$cor,main=titulo)
+tempo %>% filter(cor<1) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label() + ggtitle(titulo)
+
+titulo = "EUR GRM first row"
+grmmat = OmicKriging::read_GRMBin(paste0("/home/haky/IntroStatGen/out/simpheno-EUR-1.grm"))
+tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,])
+tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID"))
+hist(tempo$cor,main=titulo)
+tempo %>% filter(cor<.99) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label()+ ggtitle(titulo)
+
+
+
+
+```
+
+
+
+
+use Yang formula to adjust if necessary
+
