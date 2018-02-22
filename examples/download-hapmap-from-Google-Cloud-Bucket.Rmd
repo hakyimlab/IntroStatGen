@@ -65,8 +65,7 @@ Create plink files with founders only
 ```{r}
 
 ## subset founders
-getwd()
-comm = paste0(plinkname, " --bfile ", bedheader, " --make-bed --filter-founders ", " --maf 0.05 --out ", data.dir, "founders-common")
+comm = paste0(plinkname, " --bfile ", bedheader, " --make-bed --autosome --filter-founders ", " --maf 0.05 --out ", data.dir, "founders-common")
 print(comm)
 system(comm)
 
@@ -89,7 +88,7 @@ Create plink files with EURsubset
 popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
 popinfo %>% filter(population %in% c("CEU","TSI")) %>% write_tsv(paste0(data.dir,"EUR.txt"))
 
-comm = paste0(plinkname, " --bfile ", bedheader, " --make-bed --keep ", data.dir,"EUR.txt ", " --maf 0.05 --out ", data.dir, "EUR-common")
+comm = paste0(plinkname, " --bfile ", bedheader, " --make-bed  --autosome --keep ", data.dir,"EUR.txt ", " --maf 0.05 --out ", data.dir, "EUR-common")
 print(comm)
 system(comm)
 
