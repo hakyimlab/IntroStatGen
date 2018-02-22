@@ -198,7 +198,7 @@ Plot manhattan plot
 ```{r, echo=FALSE}
 ##install.packages("qqman")
 library(qqman)
-ind=sample(1:nrow(assocPC), 1e5) ## select subset to plot. We wouldn't do this in a real analysis since we could be missing significant hits by subsampling.
+ind=sample(1:nrow(qassoc), 1e5) ## select subset to plot. We wouldn't do this in a real analysis since we could be missing significant hits by subsampling.
 manhattan(qassoc[ind,])
 
 ```
@@ -243,24 +243,27 @@ comm = paste0(gctaname, " --reml ", " --grm ", outheader, "-right --pheno ", phe
 print(comm)
 system(comm)
 
+
+print("------------")
+print(Sys.time())
 ```
 
 Read GRM
 ```{r}
-## install.packages("")
+## install_github("hakyimlab/OmicKriging")
 titulo = "all pop GRM first row"
-grmmat = OmicKriging::read_GRMBin(paste0("/home/haky/IntroStatGen/out/simpheno-all-1.grm"))
-tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,])
-tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID"))
+grmmat = OmicKriging::read_GRMBin(paste0(outheader,".grm")) ## read grm
+tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,]) ## take first row of grm
+tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID")) ## add population info
 hist(tempo$cor,main=titulo)
 tempo %>% filter(cor<0.99) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label() + geom_hline(yintercept=0) +  ggtitle(titulo) + geom_rug()
 
-titulo = "EUR GRM first row"
-grmmat = OmicKriging::read_GRMBin(paste0("out/simpheno-EUR-1.grm"))
-tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,])
-tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID"))
-hist(tempo$cor,main=titulo)
-tempo %>% filter(cor<.99) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label()+ geom_hline(yintercept=0) +  ggtitle(titulo) + geom_rug()
+# titulo = "EUR GRM first row"
+# grmmat = OmicKriging::read_GRMBin(paste0("out/simpheno-EUR-1.grm"))
+# tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,])
+# tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID"))
+# hist(tempo$cor,main=titulo)
+# tempo %>% filter(cor<.99) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label()+ geom_hline(yintercept=0) +  ggtitle(titulo) + geom_rug()
 
 ```
 
