@@ -24,6 +24,7 @@ mkdir bin
 
 ## Download plink from https://www.cog-genomics.org/plink2
 ## wget https://www.cog-genomics.org/static/bin/plink180109/plink_mac.zip
+## wget http://cnsgenomics.com/software/gcta/gcta_1.91.2beta_mac.zip
 
 mkdir out
 

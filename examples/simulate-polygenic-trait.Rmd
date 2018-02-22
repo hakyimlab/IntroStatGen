@@ -40,14 +40,15 @@ outheader = paste0(out.dir,header0,"-",seednumber)
 propC = 0.10
 
 ## run from scratch if header0 changes
-from_scratch = FALSE
+from_scratch = TRUE
 
 popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
 
 ```
 
 
-Calculate GRM. This takes long time, and you may need 4GB+ of memory. 
+Calculate GRM. This takes long time, and you may need 4GB+ of RAM. Otherwise, you will need to build the GRM by parts (see --make-grm-part here http://cnsgenomics.com/software/gcta/#MakingaGRM) 
+I had 13GB of RAM.
 
 **NOTICE: This won't run unless from_scratch=TRUE 
 ```{r}
@@ -55,7 +56,7 @@ Calculate GRM. This takes long time, and you may need 4GB+ of memory.
 ## calculate GRM
 if(from_scratch)
 {
-comm = paste0(gctafile, " --bfile ", bedheader," --make-grm-bin --out ", outheader)
+comm = paste0(gctafile, " --bfile ", bedheader," --autosome --make-grm-bin --out ", outheader)
 print(comm)
 system(comm)
 }
