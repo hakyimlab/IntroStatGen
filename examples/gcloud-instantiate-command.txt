@@ -1,13 +1,13 @@
 
-for ii in {23..23}; do
+for ii in {25..25}; do
 
-gcloud compute --project "introstatgen" disks create "instance-$ii" --size "10" --zone "us-central1-c" --source-snapshot "hki-machine-snapshot-2018-02-21" --type "pd-standard"
+gcloud compute --project "introstatgen" disks create "instance-$ii" --size "10" --zone "us-central1-c" --source-snapshot "snapshot-rstudio-2018-02-22" --type "pd-standard"
 
 gcloud beta compute \
 --project "introstatgen" instances create "instance-$ii" \
 --zone "us-central1-c" --machine-type "n1-standard-1" \
 --subnet "default" \
---metadata "startup-script=docker run -d  -p 8787:8787  -v /home/haky/IntroStatGen:/home/$USER/IntroStatGen -e USERID=$UID  -e USER=student -e PASSWORD=secretp -e ROOT=TRUE rocker/tidyverse,ssh-keys=haky:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDr+df4PivSEb3Dre6fiRhL5tWiRmKj9JqsYIoiJRO2hbBktnIlzd6fKBbOWoPPaSfoysFidFbLHB09MYnPZqgAKPl6k22eheMjZPWtHyfzoD/YcNHjgDUFtTopTh9egjwptnOlyH4z+Hj5nyN6SFKhGn9WVKC+ldUELvPdor89xeg7vOM/eGzTGWMbLzetFnpDIQ8t4ubHQG0EPf4T/VlBTzCk3iQx5OkBUwWEzXf8GB1/3DEub0oqz0J28MnJIBRkzT2yLeKGF2746ZhlYlS/riOPD3u9xKfu4Dd0/bIc/gFW2emDFGelDUwS/uFUxaULk6aULiPlBG7D9477JCyX haky@HKI-iMac.local" \
+--metadata "startup-script=docker run -d  -p 8787:8787  -v $(pwd)/IntroStatGen:/home/$USER/foo -e USERID=$UID  -e USER=student -e PASSWORD=secretp -e ROOT=TRUE rocker/tidyverse,ssh-keys=haky:ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDr+df4PivSEb3Dre6fiRhL5tWiRmKj9JqsYIoiJRO2hbBktnIlzd6fKBbOWoPPaSfoysFidFbLHB09MYnPZqgAKPl6k22eheMjZPWtHyfzoD/YcNHjgDUFtTopTh9egjwptnOlyH4z+Hj5nyN6SFKhGn9WVKC+ldUELvPdor89xeg7vOM/eGzTGWMbLzetFnpDIQ8t4ubHQG0EPf4T/VlBTzCk3iQx5OkBUwWEzXf8GB1/3DEub0oqz0J28MnJIBRkzT2yLeKGF2746ZhlYlS/riOPD3u9xKfu4Dd0/bIc/gFW2emDFGelDUwS/uFUxaULk6aULiPlBG7D9477JCyX haky@HKI-iMac.local" \
 --no-restart-on-failure --maintenance-policy "TERMINATE" \
 --preemptible --service-account "10877517008-compute@developer.gserviceaccount.com" \
 --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring.write","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" \
