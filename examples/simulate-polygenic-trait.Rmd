@@ -1,25 +1,37 @@
 ---
 title: "Simulating Complex Traits"
 output:
-  pdf_document: default
+  html_document:
+    df_print: paged
   html_notebook: default
+  pdf_document: default
 editor_options:
   chunk_output_type: inline
 ---
 
+```{r setup}
+
+knitr::opts_knit$set(root.dir = normalizePath("/home/haky/IntroStatGen")) 
+##setwd("/home/haky/IntroStatGen/")
+
+```
 
 Load packages and define folders
 ```{r}
+
+getwd()
 ##install.packages("tidyverse")
 library(tidyverse)
-data.dir = "/home/haky/IntroStatGen/data/hapmap/"
-bin.dir = "/home/haky/IntroStatGen/bin/"
-out.dir ="/home/haky/IntroStatGen/out/"
-gist.dir = "/home/haky/IntroStatGen/repo-IntroStatGen/gists/"
+bin.dir = "bin/"
+data.dir = "data/hapmap/"
+out.dir ="out/"
+gist.dir = "repo-IntroStatGen/gists/"
 
-plinkname = paste0(bin.dir,"plink")
-header0 = "founders-common" ## EUR-common, hapmap-common, hapmap2-common
+plinkname = paste0("./",bin.dir,"plink")
+header0 = "founders-common" 
 bedheader = paste0(data.dir,header0)
+
+gctaname = paste0(bin.dir,"gcta64")
 
 seednumber = 1
 outheader = paste0(out.dir,header0,"-",seednumber)
@@ -28,37 +40,58 @@ outheader = paste0(out.dir,header0,"-",seednumber)
 propC = 0.10
 
 ## run from scratch if header0 changes
-from_scratch = FALSE
+from_scratch = TRUE
+
+popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
 
 ```
 
-calculate GRM
+
+Calculate GRM. This takes long time, and you may need 4GB+ of RAM. Otherwise, you will need to build the GRM by parts (see --make-grm-part here http://cnsgenomics.com/software/gcta/#MakingaGRM) 
+I had 13GB of RAM.
+
+**NOTICE: This won't run unless from_scratch=TRUE 
 ```{r}
 
 ## calculate GRM
 if(from_scratch)
-{gctafile = paste0(bin.dir,"gcta64")
-comm = paste0(gctafile, " --bfile ", bedheader," --make-grm-bin --out ", outheader)
+{
+comm = paste0(gctafile, " --bfile ", bedheader," --autosome --make-grm-bin --out ", outheader)
 print(comm)
 system(comm)
 }
 
 ## calculate grm left using ch1 to ch8 
 if(from_scratch)
-{gctafile = paste0(bin.dir,"gcta64")
-comm = paste0(gctafile, " --bfile ", bedheader,"-left --make-grm-bin --out ", outheader,"-left")
+{
+comm = paste0(gctaname, " --bfile ", bedheader,"-left --make-grm-bin --out ", outheader,"-left")
 print(comm)
 system(comm)
 }
 
 ## calculate grm right using ch9 to ch22 
 if(from_scratch)
-{gctafile = paste0(bin.dir,"gcta64")
-comm = paste0(gctafile, " --bfile ", bedheader,"-right --make-grm-bin --out ", outheader,"-right")
+{
+comm = paste0(gctaname, " --bfile ", bedheader,"-right --make-grm-bin --out ", outheader,"-right")
 print(comm)
 system(comm)
 }
 ```
+
+Calculate PCs from GRM and plot PC1 vs PC2. Once GRM is computed, PC calculation is very fast.
+```{r}
+comm = paste0(gctaname, " --pca 5 ", " --grm ", outheader , " --out ", outheader)
+print(comm)
+system(comm)
+
+pcdata = read_table2(paste0(outheader,".eigenvec"),col_names = FALSE)
+names(pcdata) = c("FID","IID",paste0("PC",1:5))
+
+pcdata = popinfo %>% inner_join(pcdata, by=c("FID"="FID", "IID"="IID"))
+## plot PC1 vs PC2
+pcdata %>% ggplot(aes(PC1,PC2,col=population)) + geom_point()
+```
+
 
 Read marker information from plinkfile.bim
 ```{r}
@@ -66,6 +99,7 @@ Read marker information from plinkfile.bim
 
 bimdata = read_tsv(paste0(bedheader, ".bim"),col_names = FALSE)
 names(bimdata) = c("chr","rsid","dis","pos","A1","A2")
+dim(bimdata)
 head(bimdata)
 Mt = nrow(bimdata)
 MC = round(propC * Mt) ## number of causal SNPs
@@ -91,12 +125,13 @@ hist(betaC)
 ## generate weights file, Y = sum(weight * X) + error; we call beta or weight interchangeably
 weightdata = bimdata[indC,] %>% select(rsid,A1) 
 weightdata$betas = betaC
+head(weightdata)
 weightfile = paste0(out.dir, "weights-seed-",seednumber,".txt")
 write_tsv(weightdata,path=weightfile)
 
 ```
 
-Calculate the genetic component using plink --score
+Calculate the genetic component using plink --score. This is more efficiently done with plink.
 ```{r}
 ## run plink -score
 comm = paste0(bin.dir,"plink --bfile ", bedheader," --score ", weightfile, " header sum --out ", out.dir,"polyscore-seed",seednumber)
@@ -115,7 +150,7 @@ Calculate var of epsilon as a function of variance of beta and heritability
 h2 = 0.60
 sigepsi2 = (1-h2)/h2 * var(PSdata$SCORESUM)
 print(h2)
-print(sigepsi2,2)
+print(sigepsi2,2) ## show 2 decimals of variance of epsilon
 print(var(PSdata$SCORESUM)/(var(PSdata$SCORESUM)+sigepsi2))
 
 ## homework problem: show analytically that variance of epsilon defined above leads to the heritability h2. 
@@ -147,7 +182,7 @@ system(comm)
 ```
 
 
-Plots histogram of p values
+Plots histogram of p values, qqplot
 ```{r}
 
 qassoc = read_table(paste0(outheader, ".qassoc"))
@@ -159,6 +194,7 @@ qqunif.plot(qassoc$P,main = paste0("sim with h2 = ",round(h2,2)) )
 
 ```
 
+Plot manhattan plot
 ```{r, echo=FALSE}
 ##install.packages("qqman")
 library(qqman)
@@ -167,7 +203,7 @@ manhattan(qassoc[ind,])
 
 ```
 
-compare true betas with estimates
+Compare true betas with estimates
 Notice 90% of betas are 0
 plot estimated betas vs true betas
 ```{r}
@@ -178,77 +214,57 @@ tempo = tempo %>% mutate(beta = ifelse(is.na(betas),0,betas)) ## if not in weigh
 ## plot
 tempo %>% sample_frac(0.10) %>% ggplot(aes(betas, betahat)) + geom_point() + geom_abline()
 
-## small region plot beta vs position
+## Pick a small region plot beta vs position
 
-## LD
+## plot LD
 
 ```
 
 
 
 
-calculate heritability
+Calculate heritability
 
 ```{r}
 grmcutoff = 1 ## this is no cutoff. typically one would use --grm-cutoff 0.025
 
 ## calculate h2 using all chromosomes
-comm = paste0(gctafile, " --reml ", " --grm ", outheader, " --pheno ", phenofile ,"  --grm-cutoff ",grmcutoff, " --out ", outheader, "-gcta-all")
+comm = paste0(gctaname, " --reml ", " --grm ", outheader, " --pheno ", phenofile ,"  --grm-cutoff ",grmcutoff, " --out ", outheader, "-gcta-all")
 print(comm)
 system(comm)
 
 ## calculate heritability using chr 1 to chr 8)
-comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-left --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-left")
+comm = paste0(gctaname, " --reml ", " --grm ", outheader, "-left --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-left")
 print(comm)
 system(comm)
 
 ## calculate heritability using chr 9 to chr 22)
-comm = paste0(gctafile, " --reml ", " --grm ", outheader, "-right --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-right")
+comm = paste0(gctaname, " --reml ", " --grm ", outheader, "-right --pheno ", phenofile , " --grm-cutoff ",grmcutoff," --out ", outheader, "-gcta-right")
 print(comm)
 system(comm)
 
 ```
-
-
-
-```{r}
-
-## generate PCs with gcta (above we generated pcs with plink but need to get rid of header and I only want 5 pcs. Once the GRM is calculated, PCs are cheap to generate: 1.3 seconds)
-
-
-comm = paste0(gctafile, " --pca 5 ", " --grm ", outheader , " --out ", outheader, "-gcta-covar")
-print(comm)
-system(comm)
-
-
-```
-
 
 Read GRM
-
 ```{r}
-
+## install.packages("")
 titulo = "all pop GRM first row"
 grmmat = OmicKriging::read_GRMBin(paste0("/home/haky/IntroStatGen/out/simpheno-all-1.grm"))
 tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,])
 tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID"))
 hist(tempo$cor,main=titulo)
-tempo %>% filter(cor<1) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label() + ggtitle(titulo)
+tempo %>% filter(cor<0.99) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label() + geom_hline(yintercept=0) +  ggtitle(titulo) + geom_rug()
 
 titulo = "EUR GRM first row"
-grmmat = OmicKriging::read_GRMBin(paste0("/home/haky/IntroStatGen/out/simpheno-EUR-1.grm"))
+grmmat = OmicKriging::read_GRMBin(paste0("out/simpheno-EUR-1.grm"))
 tempo = data.frame(IID=names(grmmat[1,]),cor=grmmat[1,])
 tempo = tempo %>% inner_join(popinfo,by=c("IID"="IID"))
 hist(tempo$cor,main=titulo)
-tempo %>% filter(cor<.99) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label()+ ggtitle(titulo)
-
-
-
+tempo %>% filter(cor<.99) %>% ggplot(aes(IID,cor,col=population,label=population)) + geom_point() + geom_label()+ geom_hline(yintercept=0) +  ggtitle(titulo) + geom_rug()
 
 ```
 
 
 
 
-use Yang formula to adjust if necessary
 
