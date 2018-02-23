@@ -11,8 +11,8 @@ editor_options:
 
 ```{r setup}
 
-knitr::opts_knit$set(root.dir = normalizePath("/home/haky/IntroStatGen")) 
-##setwd("/home/haky/IntroStatGen/")
+work.dir = "work/" ## EDIT THIS SO THAT IT POINTS TO YOUR WORKING DIRECTORY ON YOUR LOCAL MACHINE"
+knitr::opts_knit$set(root.dir = normalizePath(word.dir)) 
 
 ```
 
