@@ -5,8 +5,8 @@ output: html_notebook
 
 
 ```{r setup}
-
-knitr::opts_knit$set(root.dir = normalizePath("/home/haky/IntroStatGen")) 
+work.dir = "work/" ## EDIT THIS SO THAT IT POINTS TO YOUR WORKING DIRECTORY ON YOUR LOCAL MACHINE"
+knitr::opts_knit$set(root.dir = normalizePath(word.dir)) 
 
 ```
 
@@ -15,7 +15,7 @@ knitr::opts_knit$set(root.dir = normalizePath("/home/haky/IntroStatGen"))
 Use your working directory rather than "/home/haky/IntroStatGen/"
 ```{bash, eval=FALSE}
 
-cd /home/haky/IntroStatGen/
+cd work.dir
 mkdir data
 mkdir data/hapmap
 
