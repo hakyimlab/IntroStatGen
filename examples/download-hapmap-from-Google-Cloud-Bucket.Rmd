@@ -12,7 +12,7 @@ knitr::opts_knit$set(root.dir = normalizePath(word.dir))
 
 ### download hapmap genotypes and create folder structure
 ### for the first time only run the block below on the terminal (tab next to Console)
-Use your working directory rather than "/home/haky/IntroStatGen/"
+
 ```{bash, eval=FALSE}
 
 cd work.dir
