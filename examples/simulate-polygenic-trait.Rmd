@@ -11,8 +11,8 @@ editor_options:
 
 ```{r setup}
 
-work.dir = "work/" ## EDIT THIS SO THAT IT POINTS TO YOUR WORKING DIRECTORY ON YOUR LOCAL MACHINE"
-knitr::opts_knit$set(root.dir = normalizePath(word.dir)) 
+work.dir = "/home/student/work/" ## EDIT THIS SO THAT IT POINTS TO YOUR WORKING DIRECTORY ON YOUR LOCAL MACHINE"
+knitr::opts_knit$set(root.dir = normalizePath(work.dir)) 
 
 ```
 
@@ -40,7 +40,7 @@ outheader = paste0(out.dir,header0,"-",seednumber)
 propC = 0.10
 
 ## run from scratch if header0 changes
-from_scratch = TRUE
+from_scratch = FALSE
 
 popinfo = read_tsv(paste0(data.dir,"relationships_w_pops_051208.txt"))
 
@@ -56,7 +56,7 @@ I had 13GB of RAM.
 ## calculate GRM
 if(from_scratch)
 {
-comm = paste0(gctafile, " --bfile ", bedheader," --autosome --make-grm-bin --out ", outheader)
+comm = paste0(gctaname, " --bfile ", bedheader," --autosome --make-grm-bin --out ", outheader)
 print(comm)
 system(comm)
 }
@@ -119,7 +119,7 @@ Simulate betas as normally distributed for the propC% of SNPs selected above
 ```{r simulate betas, eval=FALSE}
 
 set.seed(seednumber + 1)
-betaC = rnorm(MC,mean=0, sd=1/sqrt(MC))
+betaC = rnorm(MC,mean=0, sd=1)
 hist(betaC)
 
 ## generate weights file, Y = sum(weight * X) + error; we call beta or weight interchangeably
@@ -158,7 +158,7 @@ print(var(PSdata$SCORESUM)/(var(PSdata$SCORESUM)+sigepsi2))
 
 ```
 
-Calculate phenotype and write file to be used with plink
+Calculate phenotype by adding epsilon to the polygenic score and write file to be used with plink
 ```{r}
 
 phenofile = paste0(outheader,".txt")
@@ -201,6 +201,8 @@ library(qqman)
 ind=sample(1:nrow(qassoc), 1e5) ## select subset to plot. We wouldn't do this in a real analysis since we could be missing significant hits by subsampling.
 manhattan(qassoc[ind,])
 
+## wow, we never get these kinds of manhattan plots. Lots of very significan variants.
+
 ```
 
 Compare true betas with estimates
@@ -217,6 +219,20 @@ tempo %>% sample_frac(0.10) %>% ggplot(aes(betas, betahat)) + geom_point() + geo
 ## Pick a small region plot beta vs position
 
 ## plot LD
+
+## NOTE: NOT MUCH CORRELATION BETWEEN ESTIMATED AND TRUE BETAS
+
+```
+
+But there is significant correlation
+```{r}
+
+print( cor.test(tempo$betahat,tempo$betas,use="complete.obs",method="spearman") )
+
+```
+
+Calculate polygenic score using estimated betas and compare with actual phenoype
+```{r}
 
 ```
 
